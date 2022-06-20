@@ -22,9 +22,14 @@
 
 package org.terasology.jnlua;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
  * Loads the JNLua native library.
- * 
+ * <p>
  * The class provides and configures a default loader implementation that loads
  * the JNLua native library by means of the <code>System.loadLibrary</code>
  * method. In some situations, you may want to override this behavior. For
@@ -34,93 +39,135 @@ package org.terasology.jnlua;
  * LuaState is accessed.
  */
 public final class NativeSupport {
-	// -- Static
-	private static final NativeSupport INSTANCE = new NativeSupport();
+    // -- Static
+    private static final NativeSupport INSTANCE = new NativeSupport();
 
-	// -- State
-	private Loader loader = new DefaultLoader();
+    // -- State
+    private Loader loader = new DefaultLoader();
 
-	/**
-	 * Returns the instance.
-	 * 
-	 * @return the instance
-	 */
-	public static NativeSupport getInstance() {
-		return INSTANCE;
-	}
+    /**
+     * Returns the instance.
+     *
+     * @return the instance
+     */
+    public static NativeSupport getInstance() {
+        return INSTANCE;
+    }
 
-	// -- Construction
-	/**
-	 * Private constructor to prevent external instantiation.
-	 */
-	private NativeSupport() {
-	}
+    // -- Construction
 
-	// -- Properties
-	/**
-	 * Return the native library loader.
-	 * 
-	 * @return the loader
-	 */
-	public Loader getLoader() {
-		return loader;
-	}
+    /**
+     * Private constructor to prevent external instantiation.
+     */
+    private NativeSupport() {
+    }
 
-	/**
-	 * Sets the native library loader.
-	 * 
-	 * @param loader
-	 *            the loader
-	 */
-	public void setLoader(Loader loader) {
-		if (loader == null) {
-			throw new NullPointerException("loader must not be null");
-		}
-		this.loader = loader;
-	}
+    // -- Properties
 
-	// -- Member types
-	/**
-	 * Loads the library.
-	 */
-	public interface Loader {
-		public void load(Class src);
-	}
+    /**
+     * Return the native library loader.
+     *
+     * @return the loader
+     */
+    public Loader getLoader() {
+        return loader;
+    }
 
-	private class DefaultLoader implements Loader {
-		@Override
-		public void load(Class src) {
-			boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-			boolean isMacOS = System.getProperty("os.name").toLowerCase().contains("mac");
+    /**
+     * Sets the native library loader.
+     *
+     * @param loader the loader
+     */
+    public void setLoader(Loader loader) {
+        if (loader == null) {
+            throw new NullPointerException("loader must not be null");
+        }
+        this.loader = loader;
+    }
 
-			// Generate library name.
-			StringBuilder builder = new StringBuilder(isWindows ? "libjnlua-" : "jnlua-");
+    // -- Member types
 
-			if (LuaState53.class.isAssignableFrom(src)) {
-				builder.append("5.3-");
-			} else {
-				builder.append("5.2-");
-			}
+    /**
+     * Loads the library.
+     */
+    public interface Loader {
+        public void load(Class<?> src);
+    }
 
-			if (isWindows) {
-				// Windows
-				builder.append("windows-");
-			} else if (isMacOS) {
-				builder.append("mac-");
-			} else {
-				// Assume Linux
-				builder.append("linux-");
-			}
+    private static class DefaultLoader implements Loader {
+        @Override
+        public void load(Class<?> src) {
+            File libFile;
+            String platformTypeName;
+            String platform;
+            String osName = System.getProperty("os.name").toLowerCase();
+            switch (platform = System.getProperty("os.arch").toLowerCase()) {
+                case "x86_64":
+                case "amd64": {
+                    platformTypeName = "amd64";
+                    break;
+                }
+                case "aarch64": {
+                    platformTypeName = "aarch64";
+                    break;
+                }
+                case "arm": {
+                    platformTypeName = "arm";
+                    break;
+                }
+                case "x86": {
+                    platformTypeName = "x86";
+                    break;
+                }
+                default: {
+                    platformTypeName = "raw" + platform;
+                }
+            }
 
-			if (System.getProperty("os.arch").endsWith("64")) {
-				// Assume x86_64
-				builder.append("amd64");
-			} else {
-				// Assume x86_32
-				builder.append("i686");
-			}
-System.out.println("Load lib: " + builder.toString());
-			System.loadLibrary(builder.toString());
-		}
-	}
+            StringBuilder osTypeName = new StringBuilder();
+            if (osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
+                osTypeName.append("linux").append(".so");
+            } else if (osName.contains("win")) {
+                osTypeName.append("windows").append(".dll");
+            } else if (osName.contains("mac")) {
+                osTypeName.append("mac").append(".dylib");
+            } else {
+                osTypeName.append("raw").append(osName);
+            }
+
+            String libFileName = String.format("/%s/%s-%s", NativeSupport.class.getName().split("\\.")[0], platformTypeName, osTypeName);
+            try {
+                libFile = File.createTempFile("lib", null);
+                libFile.deleteOnExit();
+                if (!libFile.exists()) {
+                    throw new IOException();
+                }
+            } catch (IOException iOException) {
+                throw new UnsatisfiedLinkError("Failed to create temp file");
+            }
+            byte[] arrayOfByte = new byte[2048];
+            try {
+                InputStream inputStream = Loader.class.getResourceAsStream(libFileName);
+                if (inputStream == null) {
+                    throw new UnsatisfiedLinkError(String.format("Failed to open lib file: %s", libFileName));
+                }
+                try (FileOutputStream fileOutputStream = new FileOutputStream(libFile);) {
+                    int size;
+                    while ((size = inputStream.read(arrayOfByte)) != -1) {
+                        fileOutputStream.write(arrayOfByte, 0, size);
+                    }
+				} catch (Throwable throwable) {
+                    try {
+                        inputStream.close();
+                    } catch (Throwable throwable1) {
+                        throwable.addSuppressed(throwable1);
+                    }
+                    throw throwable;
+                }
+            } catch (IOException exception) {
+                throw new UnsatisfiedLinkError(String.format("Failed to copy file: %s", exception.getMessage()));
+            }
+            System.load(libFile.getAbsolutePath());
+        }
+    }
 }
