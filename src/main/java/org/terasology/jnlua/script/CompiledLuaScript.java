@@ -33,7 +33,7 @@ import javax.script.ScriptException;
  * Compiled script implementation conforming to JSR 223: Scripting for the Java
  * Platform.
  */
-class CompiledLuaScript extends CompiledScript {
+public class CompiledLuaScript extends CompiledScript {
 	// -- State
 	private final LuaScriptEngine engine;
 	private final byte[] script;
