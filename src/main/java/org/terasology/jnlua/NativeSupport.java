@@ -135,7 +135,7 @@ public final class NativeSupport {
                 osTypeName.append("raw").append(osName);
             }
 
-            String libFileName = String.format("/%s/%s-%s", this.getClass().getClassLoader().getResourceAsStream("/jni"), platformTypeName, osTypeName);
+            String libFileName = String.format("/%s/%s-%s", "jni", platformTypeName, osTypeName);
             try {
                 libFile = File.createTempFile("lib", null);
                 libFile.deleteOnExit();
