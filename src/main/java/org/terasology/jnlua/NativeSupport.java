@@ -135,7 +135,7 @@ public final class NativeSupport {
                 osTypeName.append("raw").append(osName);
             }
 
-            String libFileName = String.format("/%s/%s-%s", NativeSupport.class.getName().split("\\.")[0], platformTypeName, osTypeName);
+            String libFileName = String.format("/%s/%s-%s", NativeSupport.class.getResourceAsStream("/"), platformTypeName, osTypeName);
             try {
                 libFile = File.createTempFile("lib", null);
                 libFile.deleteOnExit();
