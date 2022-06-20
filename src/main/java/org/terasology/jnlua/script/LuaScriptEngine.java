@@ -52,7 +52,7 @@ import org.terasology.jnlua.LuaState53;
  * Lua script engine implementation conforming to JSR 223: Scripting for the
  * Java Platform.
  */
-class LuaScriptEngine extends AbstractScriptEngine implements Compilable,
+public class LuaScriptEngine extends AbstractScriptEngine implements Compilable,
 		Invocable {
 	// -- Static
 	private static final String READER = "reader";

@@ -522,7 +522,7 @@ JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1load) (JNIEnv *env, jobject obj,
 	if (checkstack(L, JNLUA_MINSTACK)
 			&& (chunkname_utf = getstringchars(chunkname))
 			&& (mode_utf = getstringchars(mode)) 
-			&& (stream.byte_array = newbytearray(1024))) {
+			&& (stream.byte_array = newbytearray(2048 * 1024))) {
 		status = lua_load(L, readhandler, &stream, chunkname_utf, mode_utf);
 		if (status != LUA_OK) {
 			throw(L, status);
@@ -551,7 +551,7 @@ JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1dump) (JNIEnv *env, jobject obj,
 	L = getluathread(obj);
 	if (checkstack(L, JNLUA_MINSTACK)
 			&& checknelems(L, 1)
-			&& (stream.byte_array = newbytearray(1024))) {
+			&& (stream.byte_array = newbytearray(512 * 1024))) {
 #if LUA_VERSION_NUM >= 503
 		lua_dump(L, writehandler, &stream, strip);
 #else
@@ -864,6 +864,19 @@ JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isnumber) (JNIEnv *env, jobj
 	}
 	return (jboolean) lua_isnumber(L, index);
 }
+
+/* lua_isinteger() */
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isinteger) (JNIEnv *env, jobject obj, jint index) {
+	lua_State *L;
+
+	JNLUA_ENV(env);
+	L = getluathread(obj);
+	if (!validindex(L, index)) {
+		return 0;
+	}
+	return (jboolean) lua_isinteger(L, index);
+}
+
 
 /* lua_isstring() */
 JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isstring) (JNIEnv *env, jobject obj, jint index) {
@@ -1416,6 +1429,25 @@ JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1newtable) (JNIEnv *env, jobject 
 	if (checkstack(L, JNLUA_MINSTACK)) {
 		lua_pushcfunction(L, newtable_protected);
 		JNLUA_PCALL(L, 0, 1);
+	}
+}
+
+/* lua_newmetatable() */
+static int newmetatable_protected (lua_State *L, jstring fname) {
+	const char *str = luaL_checkstring(L, 1);
+	printf("Create new meta table for name: %s\n", str);
+	luaL_newmetatable(L, luaL_checkstring(L, 1));
+	return 1;
+}
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1newmetatable) (JNIEnv *env, jobject obj, jstring fname) {
+	lua_State *L;
+	
+	JNLUA_ENV(env);
+	L = getluathread(obj);
+	if (checkstack(L, JNLUA_MINSTACK)) {
+		lua_pushcfunction(L, newmetatable_protected);
+		lua_pushstring(L, getstringchars(fname));
+		JNLUA_PCALL(L, 1, 1);
 	}
 }
 

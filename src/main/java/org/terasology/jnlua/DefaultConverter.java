@@ -358,6 +358,8 @@ public class DefaultConverter implements Converter {
 				return (T) luaValueConverter.convert(luaState, index);
 			}
 			if (formalType == Object.class) {
+				if(luaState.isInteger(index))
+					return (T) Integer.valueOf((int)luaState.toInteger(index));
 				return (T) Double.valueOf(luaState.toNumber(index));
 			}
 			break;
@@ -382,7 +384,9 @@ public class DefaultConverter implements Converter {
 				return (T) new AbstractTableMap<Object>() {
 					@Override
 					protected Object convertKey(int index) {
-						return getLuaState().toJavaObject(index, Object.class);
+						Object keyObj = getLuaState().toJavaObject(index, Object.class);
+						if(keyObj instanceof Double) return Integer.valueOf(((Double)keyObj).intValue());
+						return (getLuaState().toJavaObject(index, Object.class));
 					}
 
 					@Override

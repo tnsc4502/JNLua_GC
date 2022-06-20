@@ -31,7 +31,7 @@ import org.terasology.jnlua.util.AbstractTableMap;
  * Lua bindings implementation conforming to JSR 223: Scripting for the Java
  * Platform.
  */
-class LuaBindings extends AbstractTableMap<String> implements Bindings {
+public class LuaBindings extends AbstractTableMap<String> implements Bindings {
 	// -- State
 	private LuaScriptEngine scriptEngine;
 
@@ -65,7 +65,9 @@ class LuaBindings extends AbstractTableMap<String> implements Bindings {
 
 	@Override
 	protected String convertKey(int index) {
-		return getLuaState().toString(index);
+		if(getLuaState().isString(index))
+			return getLuaState().toString(index);
+		else return String.valueOf(getLuaState().toNumber(index));
 	}
 
 	// -- LuaProxy methods

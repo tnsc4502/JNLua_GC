@@ -124,6 +124,12 @@ public class LuaState52 extends LuaState {
     native boolean lua_isnumber(int index);
 
     @Override
+    native boolean lua_isinteger(int index);
+
+    @Override
+    native void lua_newmetatable(String name);
+
+    @Override
     native boolean lua_isstring(int index);
 
     @Override

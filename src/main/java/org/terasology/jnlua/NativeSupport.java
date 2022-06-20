@@ -96,7 +96,7 @@ public final class NativeSupport {
 			// Generate library name.
 			StringBuilder builder = new StringBuilder(isWindows ? "libjnlua-" : "jnlua-");
 
-			if (src == LuaState53.class) {
+			if (LuaState53.class.isAssignableFrom(src)) {
 				builder.append("5.3-");
 			} else {
 				builder.append("5.2-");
@@ -119,7 +119,7 @@ public final class NativeSupport {
 				// Assume x86_32
 				builder.append("i686");
 			}
-
+System.out.println("Load lib: " + builder.toString());
 			System.loadLibrary(builder.toString());
 		}
 	}

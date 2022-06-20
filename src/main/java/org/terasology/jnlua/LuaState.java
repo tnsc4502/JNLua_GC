@@ -1056,6 +1056,11 @@ public abstract class LuaState {
 		return lua_isnumber(index);
 	}
 
+	public synchronized boolean isInteger(int index) {
+		check();
+		return lua_isinteger(index);
+	}
+
 	/**
 	 * Returns whether the value at the specified stack index is a string or a
 	 * number (which is always convertible to a string.)
@@ -2501,6 +2506,10 @@ public abstract class LuaState {
 	abstract boolean lua_isnoneornil(int index);
 
 	abstract boolean lua_isnumber(int index);
+
+	abstract boolean lua_isinteger(int index);
+
+        abstract void lua_newmetatable(String name);
 
 	abstract boolean lua_isstring(int index);
 

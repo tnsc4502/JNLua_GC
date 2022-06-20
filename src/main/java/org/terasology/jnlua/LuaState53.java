@@ -124,6 +124,12 @@ public class LuaState53 extends LuaState {
     native boolean lua_isnumber(int index);
 
     @Override
+    native boolean lua_isinteger(int index);
+
+    @Override
+    native void lua_newmetatable(String name);
+
+    @Override
     native boolean lua_isstring(int index);
 
     @Override
@@ -279,6 +285,13 @@ public class LuaState53 extends LuaState {
     @Override
     native void lua_tablemove(int index, int from, int to, int count);
 
+	public int luaGetsubtable(int idx, String fname) {
+		return lua_getsubtable(idx, fname);
+	}
+
+	public void luaNewMetaTable(String fname) {
+		lua_newmetatable(fname);
+	}
     public static class LuaDebug extends LuaState.LuaDebug {
         LuaDebug(long luaDebug, boolean ownDebug) {
             super(luaDebug, ownDebug);
@@ -293,4 +306,5 @@ public class LuaState53 extends LuaState {
         @Override
         native String lua_debugnamewhat();
     }
+
 }

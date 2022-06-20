@@ -93,6 +93,21 @@ public abstract class AbstractTableMap<K> extends AbstractMap<K, Object>
 		}
 	}
 
+	public <T> T get(Object key, Class<T> clazz) {
+		checkKey(key);
+		LuaState luaState = getLuaState();
+		synchronized (luaState) {
+			pushValue();
+			luaState.pushJavaObject(key);
+			luaState.getTable(-2);
+			try {
+				return luaState.toJavaObject(-1, clazz);
+			} finally {
+				luaState.pop(2);
+			}
+		}
+	}
+
 	@Override
 	public Object put(K key, Object value) {
 		checkKey(key);
@@ -361,7 +376,7 @@ public abstract class AbstractTableMap<K> extends AbstractMap<K, Object>
 		// -- Map.Entry methods
 		@Override
 		public K getKey() {
-			return key;
+			return (K)(Object)(key).toString();
 		}
 
 		@Override
