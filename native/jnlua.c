@@ -522,7 +522,7 @@ JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1load) (JNIEnv *env, jobject obj,
 	if (checkstack(L, JNLUA_MINSTACK)
 			&& (chunkname_utf = getstringchars(chunkname))
 			&& (mode_utf = getstringchars(mode)) 
-			&& (stream.byte_array = newbytearray(2048 * 1024))) {
+			&& (stream.byte_array = newbytearray(512 * 1024))) {
 		status = lua_load(L, readhandler, &stream, chunkname_utf, mode_utf);
 		if (status != LUA_OK) {
 			throw(L, status);
