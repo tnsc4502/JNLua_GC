@@ -32,6 +32,7 @@
 #endif
 
 /* ---- Definitions ---- */
+#define JNLUA_DEFAULT_DUMP_BUFFER_SIZE 1024 * 128
 #define JNLUA_APIVERSION 3
 #define JNLUA_JNIVERSION JNI_VERSION_1_6
 #define JNLUA_JAVASTATE "jnlua.JavaState"
@@ -63,6 +64,7 @@ typedef struct StreamStruct  {
 	jbyteArray byte_array;
 	jbyte* bytes;
 	jboolean is_copy;
+	jint buffer_size, written_pos;
 } Stream;
 
 /* ---- JNI helpers ---- */
@@ -522,7 +524,9 @@ JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1load) (JNIEnv *env, jobject obj,
 	if (checkstack(L, JNLUA_MINSTACK)
 			&& (chunkname_utf = getstringchars(chunkname))
 			&& (mode_utf = getstringchars(mode)) 
-			&& (stream.byte_array = newbytearray(512 * 1024))) {
+			&& (stream.byte_array = newbytearray(JNLUA_DEFAULT_DUMP_BUFFER_SIZE))) {
+		stream.written_pos = 0;
+		stream.buffer_size = JNLUA_DEFAULT_DUMP_BUFFER_SIZE;
 		status = lua_load(L, readhandler, &stream, chunkname_utf, mode_utf);
 		if (status != LUA_OK) {
 			throw(L, status);
@@ -551,7 +555,11 @@ JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1dump) (JNIEnv *env, jobject obj,
 	L = getluathread(obj);
 	if (checkstack(L, JNLUA_MINSTACK)
 			&& checknelems(L, 1)
-			&& (stream.byte_array = newbytearray(512 * 1024))) {
+			&& (stream.byte_array = newbytearray(JNLUA_DEFAULT_DUMP_BUFFER_SIZE))) {
+
+		stream.written_pos = 0;
+		stream.buffer_size = JNLUA_DEFAULT_DUMP_BUFFER_SIZE;
+
 #if LUA_VERSION_NUM >= 503
 		lua_dump(L, writehandler, &stream, strip);
 #else
@@ -2576,7 +2584,24 @@ static int writehandler (lua_State *L, const void *data, size_t size, void *ud) 
 			return 1;
 		}
 	}
+	if(stream->written_pos + size >= stream->buffer_size) {
+		//Allocate a new buffer that provides much more mem space than default size to prevent from frequent mem allocation.
+		jint newBufferSize = (stream->buffer_size + stream->written_pos + size) * 16;
+		jbyteArray new_buffer = newbytearray(newBufferSize);
+		jbyte* new_bytes = (*thread_env)->GetByteArrayElements(thread_env, new_buffer, 0);
+
+		//Copy original data to the new buffer than deallocate it.
+		memcpy(new_bytes, stream->bytes, stream->written_pos);
+		(*thread_env)->ReleaseByteArrayElements(thread_env, stream->byte_array, stream->bytes, JNI_COMMIT);
+
+		//Assign the new buffer and buffer size to current stream var.
+		stream->byte_array = new_buffer;
+		stream->bytes = new_bytes;
+		stream->buffer_size = newBufferSize;
+	}
 	memcpy(stream->bytes, data, size);
+	stream->written_pos += size;
+
 	if (stream->is_copy) {
 		(*thread_env)->ReleaseByteArrayElements(thread_env, stream->byte_array, stream->bytes, JNI_COMMIT);
 	}
