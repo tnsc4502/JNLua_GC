@@ -45,6 +45,9 @@ public final class NativeSupport {
     // -- State
     private Loader loader = new DefaultLoader();
 
+    // -- Init Load
+    private final static NativeLibInit loadInit = new NativeLibInit();
+
     /**
      * Returns the instance.
      *
@@ -94,10 +97,10 @@ public final class NativeSupport {
         public void load(Class<?> src);
     }
 
-    private static class DefaultLoader implements Loader {
-        @Override
-        public void load(Class<?> src) {
-            File libFile;
+    private final static class NativeLibInit {
+        final File libFile;
+
+        public NativeLibInit() {
             String platformTypeName;
             String platform;
             String osName = System.getProperty("os.name").toLowerCase();
@@ -156,7 +159,7 @@ public final class NativeSupport {
                     while ((size = inputStream.read(arrayOfByte)) != -1) {
                         fileOutputStream.write(arrayOfByte, 0, size);
                     }
-				} catch (Throwable throwable) {
+                } catch (Throwable throwable) {
                     try {
                         inputStream.close();
                     } catch (Throwable throwable1) {
@@ -167,7 +170,17 @@ public final class NativeSupport {
             } catch (IOException exception) {
                 throw new UnsatisfiedLinkError(String.format("Failed to copy file: %s", exception.getMessage()));
             }
-            System.load(libFile.getAbsolutePath());
+        }
+
+        public File getLibFile() {
+            return libFile;
+        }
+    }
+
+    private static class DefaultLoader implements Loader {
+        @Override
+        public void load(Class<?> src) {
+            System.load(loadInit.getLibFile().getAbsolutePath());
         }
     }
 }
