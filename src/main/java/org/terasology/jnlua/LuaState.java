@@ -32,6 +32,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -283,7 +284,7 @@ public abstract class LuaState {
 		LUA_VERSION_NUM = lua_versionnum();
 		luaIntWidth = lua_integerwidth();
 
-		characterSet = Charset.forName("UTF-8");
+		characterSet = StandardCharsets.UTF_8;
 
 		ownState = luaState == 0L;
 		luaMemoryTotal = memory;
